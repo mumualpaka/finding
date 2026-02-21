@@ -1,6 +1,9 @@
 # Powershell Script
 # change path D:\DCIM\ to your directory of choice
 # the duplicate files will output into a Duplicates.txt on the desktop
+####
+####
+
 
 Get-ChildItem -Path "D:\DCIM\" -Recurse -File | 
 Group-Object -Property Length | Where-Object { $_.Count -gt 1 } | 
@@ -11,8 +14,11 @@ ForEach-Object { $_.Group } |
 Select-Object Path, Hash | Out-File "$home\Desktop\Duplicates.txt"
 
 
-
-# If only want to output on commandline
+####
+####
+## If only want to output on commandline
+####
+####
 
 Get-ChildItem -Path "D:\DCIM\" -Recurse -File | 
 Group-Object -Property Length | Where-Object { $_.Count -gt 1 } | 
@@ -21,3 +27,36 @@ Get-FileHash |
 Group-Object -Property Hash | Where-Object { $_.Count -gt 1 } | 
 ForEach-Object { $_.Group } | 
 Select-Object Path, Hash | Format-Table -AutoSize
+
+####
+####
+# If you are too lazy to find and remove manually, can move them to a different folder
+####
+####
+
+
+$SourcePath = "D:\DCIM\"
+$ReviewPath = "D:\DCIM\_REVIEW\"
+
+# Create the review folder if it doesn't exist
+if (!(Test-Path $ReviewPath)) { New-Item -ItemType Directory -Path $ReviewPath }
+
+Get-ChildItem -Path $SourcePath -Recurse -File | 
+Group-Object -Property Length | Where-Object { $_.Count -gt 1 } | 
+Select-Object -ExpandProperty Group | 
+Get-FileHash | 
+Group-Object -Property Hash | Where-Object { $_.Count -gt 1 } | 
+ForEach-Object {
+    # Sort by creation time (Oldest first)
+    $SortedFiles = $_.Group | Get-Item | Sort-Object CreationTime
+    
+    # Skip the oldest (Index 0), move the rest
+    $SortedFiles | Select-Object -Skip 1 | ForEach-Object {
+        $DestFile = Join-Path $ReviewPath $_.Name
+        
+        # Handle naming conflicts in the review folder (if two different dupes have the same name)
+        if (Test-Path $DestFile) { $DestFile = Join-Path $ReviewPath "$($_.Name)_$(Get-Random)" }
+        
+        Move-Item -Path $_.FullName -Destination $DestFile -Force
+    }
+}
