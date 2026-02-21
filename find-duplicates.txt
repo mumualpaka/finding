@@ -1,0 +1,23 @@
+# Powershell Script
+# change path D:\DCIM\ to your directory of choice
+# the duplicate files will output into a Duplicates.txt on the desktop
+
+Get-ChildItem -Path "D:\DCIM\" -Recurse -File | 
+Group-Object -Property Length | Where-Object { $_.Count -gt 1 } | 
+Select-Object -ExpandProperty Group | 
+Get-FileHash | 
+Group-Object -Property Hash | Where-Object { $_.Count -gt 1 } | 
+ForEach-Object { $_.Group } | 
+Select-Object Path, Hash | Out-File "$home\Desktop\Duplicates.txt"
+
+
+
+# If only want to output on commandline
+
+Get-ChildItem -Path "D:\DCIM\" -Recurse -File | 
+Group-Object -Property Length | Where-Object { $_.Count -gt 1 } | 
+Select-Object -ExpandProperty Group | 
+Get-FileHash | 
+Group-Object -Property Hash | Where-Object { $_.Count -gt 1 } | 
+ForEach-Object { $_.Group } | 
+Select-Object Path, Hash | Format-Table -AutoSize
